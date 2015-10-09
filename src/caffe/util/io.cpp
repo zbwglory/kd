@@ -407,4 +407,60 @@ bool ReadSegmentFlowToDatum(const string& filename, const int label,
 	return true;
 }
 
+bool ReadSegmentFlowToDatum_KD(const string& filename, const string& dir_mvs, const string& dir_tvl1, const int label,
+    const vector<int> offsets, const int height, const int width, const int length, Datum* datum){
+	cv::Mat cv_img_x, cv_img_y;
+	string* datum_string;
+	char tmp[30];
+	for (int i = 0; i < offsets.size(); ++i){
+		int offset = offsets[i];
+		for (int path = 0; path < 2; path++) {	
+			string path_select;
+			if (path == 0) 
+				path_select = dir_mvs;
+			if (path == 1)
+				path_select = dir_tvl1;
+			for (int file_id = 1; file_id < length+1; ++file_id){
+				sprintf(tmp,"flow_x_%04d.jpg",int(file_id+offset));
+				string filename_x = path_select + filename + "/" + tmp;
+				cv::Mat cv_img_origin_x = cv::imread(filename_x, CV_LOAD_IMAGE_GRAYSCALE);
+				sprintf(tmp,"flow_y_%04d.jpg",int(file_id+offset));
+				string filename_y = path_select + filename + "/" + tmp;
+				cv::Mat cv_img_origin_y = cv::imread(filename_y, CV_LOAD_IMAGE_GRAYSCALE);
+				if (!cv_img_origin_x.data || !cv_img_origin_y.data){
+					LOG(ERROR) << "Could not load file " << filename_x << " or " << filename_y;
+					return false;
+				}
+				if (height > 0 && width > 0){
+					cv::resize(cv_img_origin_x, cv_img_x, cv::Size(width, height));
+					cv::resize(cv_img_origin_y, cv_img_y, cv::Size(width, height));
+				}else{
+					cv_img_x = cv_img_origin_x;
+					cv_img_y = cv_img_origin_y;
+				}
+				if (file_id==1 && i==0 && path == 0){
+					int num_channels = 2;
+					datum->set_channels(2 * num_channels*length*offsets.size());
+					datum->set_height(cv_img_x.rows);
+					datum->set_width(cv_img_x.cols);
+					datum->set_label(label);
+					datum->clear_data();
+					datum->clear_float_data();
+					datum_string = datum->mutable_data();
+				}
+				for (int h = 0; h < cv_img_x.rows; ++h){
+					for (int w = 0; w < cv_img_x.cols; ++w){
+						datum_string->push_back(static_cast<char>(cv_img_x.at<uchar>(h,w)));
+					}
+				}
+				for (int h = 0; h < cv_img_y.rows; ++h){
+					for (int w = 0; w < cv_img_y.cols; ++w){
+						datum_string->push_back(static_cast<char>(cv_img_y.at<uchar>(h,w)));
+					}
+				}
+			}
+		}
+	}
+	return true;
+}
 }  // namespace caffe
