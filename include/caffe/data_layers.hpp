@@ -399,6 +399,47 @@ protected:
 	int lines_id_;
 };
 
+template <typename Dtype>
+class VideoDataKDRFLayer: public BasePrefetchingDataLayer<Dtype> {
+public:
+	explicit VideoDataKDRFLayer(const LayerParameter& param)
+	: BasePrefetchingDataLayer<Dtype>(param) {}
+	virtual ~VideoDataKDRFLayer();
+	virtual void DataLayerSetUp(const vector<Blob<Dtype>*>& bottom,
+			const vector<Blob<Dtype>*>& top);
+
+	virtual inline const char* type() const { return "VideoDataKD"; }
+	virtual inline int ExactNumBottomBlobs() const { return 0; }
+	virtual inline int ExactNumTopBlobs() const { return 2; }
+
+protected:
+	shared_ptr<Caffe::RNG> prefetch_rng_;
+	shared_ptr<Caffe::RNG> prefetch_rng_2_;
+	shared_ptr<Caffe::RNG> prefetch_rng_1_;
+	shared_ptr<Caffe::RNG> frame_prefetch_rng_;
+	virtual void ShuffleVideos();
+	virtual void InternalThreadEntry();
+
+#ifdef USE_MPI
+	inline virtual void advance_cursor(){
+		lines_id_++;
+		if (lines_id_ >= lines_.size()) {
+			// We have reached the end. Restart from the first.
+			DLOG(INFO) << "Restarting data prefetching from start.";
+			lines_id_ = 0;
+			if (this->layer_param_.video_data_param().shuffle()) {
+				ShuffleVideos();
+			}
+		}
+	}
+#endif
+
+	vector<std::pair<std::string, int> > lines_;
+	vector<std::pair<std::string, std::string> > lines_dir_;
+	vector<int> lines_duration_;
+	int lines_id_;
+};
+
 
 
 

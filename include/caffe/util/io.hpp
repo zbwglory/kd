@@ -104,6 +104,8 @@ bool ReadSegmentRGBToDatum(const string& filename, const int label,
 bool ReadSegmentFlowToDatum_KD(const string& filename, const string& dir_mvs, const string& dir_tvl1, const int label,
     const vector<int> offsets, const int height, const int width, const int length, Datum* datum);
 
+bool ReadSegmentFlowToDatum_KDRF(const string& filename, const string& dir_img, const string& dir_tvl1, const int label,
+    const vector<int> offsets, const int height, const int width, const int length, Datum* datum);
 
 
 inline bool ReadImageToDatum(const string& filename, const int label,
